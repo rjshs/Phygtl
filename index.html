@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>AR Social Media Environment</title>
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://jeromeetienne.github.io/AR.js/aframe/build/aframe-ar.js"></script>
+</head>
+<body style="margin : 0px; overflow: hidden;">
+    <a-scene embedded arjs='sourceType: webcam;'>
+
+        <!-- Add Hiro marker -->
+        <a-marker preset="hiro">
+            <!-- Placeholder for dynamic news items -->
+            <a-entity id="news-container" position="-1 0.5 0"></a-entity>
+        </a-marker>
+
+        <!-- Camera -->
+        <a-entity camera></a-entity>
+    </a-scene>
+
+    <script>
+        // Function to fetch news and update the scene with likes and comments
+        async function fetchNews() {
+            const apiKey = 'YOUR_API_KEY_HERE';
+            const url = `https://newsapi.org/v2/top-headlines?country=us&apiKey=${apiKey}`;
+
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                const newsContainer = document.getElementById('news-container');
+
+                // Clear previous news items
+                while (newsContainer.firstChild) {
+                    newsContainer.removeChild(newsContainer.firstChild);
+                }
+
+                // Create text elements for each news article
+                data.articles.forEach((article, index) => {
+                    // Create entity for each news item
+                    const newsEntity = document.createElement('a-entity');
+                    newsEntity.setAttribute('text', {
+                        value: `${article.title}\nLikes: ${article.likes || 0} Comments: ${article.comments.length || 0}`,
+                        align: 'left',
+                        color: '#FFFFFF',
+                        width: 4
+                    });
+                    newsEntity.setAttribute('position', {x: 0, y: -0.5 * index, z: 0});
+                    newsEntity.setAttribute('class', 'clickable');
+                    newsEntity.setAttribute('onclick', `openArticle('${article.url}')`);
+
+                    // Additional elements for interaction (like button and comment icon)
+                    const likeButton = document.createElement('a-image');
+                    likeButton.setAttribute('src', 'like_icon.png');
+                    likeButton.setAttribute('position', {x: 0.5, y: 0, z: 0});
+                    likeButton.setAttribute('scale', '0.1 0.1 0.1');
+                    likeButton.setAttribute('class', 'clickable');
+                    likeButton.setAttribute('onclick', `likeArticle('${article.url}')`);
+
+                    const commentIcon = document.createElement('a-image');
+                    commentIcon.setAttribute('src', 'comment_icon.png');
+                    commentIcon.setAttribute('position', {x: 1, y: 0, z: 0});
+                    commentIcon.setAttribute('scale', '0.1 0.1 0.1');
+                    commentIcon.setAttribute('class', 'clickable');
+                    commentIcon.setAttribute('onclick', `commentOnArticle('${article.url}')`);
+
+                    newsEntity.appendChild(likeButton);
+                    newsEntity.appendChild(commentIcon);
+
+                    newsContainer.appendChild(newsEntity);
+                });
+            } catch (error) {
+                console.log('Failed to fetch news:', error);
+            }
+        }
+
+        function likeArticle(articleId) {
+            // URL to your API endpoint for liking an article
+            const url = `https://your-api.com/api/likes`;
+
+            // Prepare the data to be sent in the POST request
+            const data = {
+                articleId: articleId
+            };
+
+            // Make a POST request using fetch API
+            fetch(url, {
+                method: 'POST', // or 'PUT'
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data), // convert the JavaScript object to a JSON string
+            })
+            .then(response => response.json()) // parse the JSON response
+            .then(data => {
+                console.log('Success:', data);
+                alert("Thanks for liking the article!");
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("Failed to like the article.");
+            });
+        }
+
+        function commentOnArticle(articleId, commentText) {
+            // URL to your API endpoint for commenting on an article
+            const url = `https://your-api.com/api/comments`;
+
+            // Prepare the data to be sent in the POST request
+            const data = {
+                articleId: articleId,
+                comment: commentText
+            };
+
+            // Make a POST request using fetch API
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Success:', data);
+                alert("Your comment has been posted!");
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                alert("Failed to post comment.");
+            });
+        }
+
+
+        // Fetch news when the scene is loaded
+        document.addEventListener('DOMContentLoaded', fetchNews);
+    </script>
+</body>
+</html>
